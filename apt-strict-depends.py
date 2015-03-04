@@ -21,8 +21,8 @@ def resolve_deps(package_name, package_list, cache):
     if package_name not in package_list:
         die('ERROR: Internal error')
     if package_list[package_name]['resolved']:
-        debug('resolve_deps incorrect call: package %s already resolved' % package_name)
-        return True
+         debug('resolve_deps incorrect call: package %s already resolved' % package_name)
+         return True
 
     package_props = package_list[package_name]
 
@@ -83,49 +83,48 @@ LOOP_LIMIT = 10000
 DEBUG = True
 
 packages = {
-    'pgpool2': { 'version': '3.3.2-1ubuntu1', 'resolved': False, 'flag': False}
+    'pgpool2': {'version': '3.3.2-1ubuntu1', 'resolved': False, 'flag': False}
 }
+orig_packages=packages.copy()
 
 # Initilize
 cache = apt.cache.Cache()
 
-# First loop - resolve dependencies for packages with exactly specified version
-loop_counter=0
-while True:
-    # Find next package to resolve dependencies
+
+# First cycle - resolve packages with explicit versions
+loop_counter = 0
+loop_finished = False
+while not loop_finished:
+    loop_finished = True
     for name, props in packages.iteritems():
         if props['resolved'] is False and props['version'] is not None and props['version'] != '':
+            loop_finished = False
             break # for
-    else:
-        break # while
+    if not loop_finished:
+        props['resolved'] = resolve_deps(name, packages, cache)
 
-    # DEBUG
-    props['resolved'] = resolve_deps(name, packages, cache)
-
-
-    loop_counter += 1;
+    loop_counter += 1
     if loop_counter > LOOP_LIMIT:
-        debug(pformat(packages))
         die('Failed(1) to resolve dependencies in %d loops' % LOOP_LIMIT)
 
-debug('while(2)')
-# Second loop - resolve dependencies for packages with exactly specified version
-loop_counter=0
-while True:
-    # Find next package to resolve dependencies
+# Second cycle - resolve packages without explicit versions
+loop_counter = 0
+loop_finished = False
+while not loop_finished:
+    loop_finished = True
     for name, props in packages.iteritems():
-        if props['resolved'] is False and ( props['version'] is None or props['version'] == '' ):
+        if props['resolved'] is False and (props['version'] is None or props['version'] != ''):
+            loop_finished = False
             break # for
-    else:
-        break # while
+    if not loop_finished:
+        props['resolved'] = resolve_deps(name, packages, cache)
 
-    props['resolved'] = resolve_deps(name, packages, cache)
-
-    loop_counter += 1;
+    loop_counter += 1
     if loop_counter > LOOP_LIMIT:
-        debug(pformat(packages))
-        die('Failed(2) to resolve dependencies in %d loops' % LOOP_LIMIT)
+        die('Failed(1) to resolve dependencies in %d loops' % LOOP_LIMIT)
 
+# Clear list from packages without versions that were not in original list
+for pkg in packages:
 
 print 'result:'
 pprint(packages)
