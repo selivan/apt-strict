@@ -15,7 +15,7 @@ def debug(message):
 def resolve_deps(package_name, package_list, cache):
     """Resolve package dependencies and add them to package_list
     package_name indicates entry in package_list"""
-    debug('resolve_deps(%s)' % package_name)
+    # debug('resolve_deps(%s)' % package_name)
 
     # Check correct call
     if package_name not in package_list:
@@ -74,7 +74,7 @@ def resolve_deps(package_name, package_list, cache):
             else:
                 package_list[bdep.name] = {'version': None, 'resolved': bdep_resolved}
 
-    return True
+    package_list[package_name]['resolved'] = True
 
 # Parse command-line arguments
 # ...
@@ -101,7 +101,7 @@ while not loop_finished:
             loop_finished = False
             break # for
     if not loop_finished:
-        props['resolved'] = resolve_deps(name, packages, cache)
+        resolve_deps(name, packages, cache)
 
     loop_counter += 1
     if loop_counter > LOOP_LIMIT:
@@ -117,16 +117,32 @@ while not loop_finished:
             loop_finished = False
             break # for
     if not loop_finished:
-        props['resolved'] = resolve_deps(name, packages, cache)
+        resolve_deps(name, packages, cache)
 
     loop_counter += 1
     if loop_counter > LOOP_LIMIT:
         die('Failed(1) to resolve dependencies in %d loops' % LOOP_LIMIT)
 
-# Clear list from packages without versions that were not in original list
-for pkg in packages:
+debug(len(packages))
+# Clear list from already installed packages without  explicit versions
+tmp = {k:v for (k,v) in packages.iteritems() if cache[k].installed is None or v['version'] is not None }
+packages=tmp
+debug(len(packages))
+# Clear list from already installed packages with necessary version
+# TODO
 
 print 'result:'
 pprint(packages)
+
+for k,v in packages.iteritems():
+    print k
+    pprint(v)
+    pprint(cache[k].versions)
+    if v['version'] is not None:
+        cache[k].candidate = cache[k].versions[v['version']]
+    cache[k].mark_install()
+
+
+print cache.install_count
 
 sys.exit(0)
