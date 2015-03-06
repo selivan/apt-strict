@@ -1,0 +1,7 @@
+utility
+python package
+ansible module
+bash completion
+
+deep inspection: what package requires other package version that could not be installed
+
