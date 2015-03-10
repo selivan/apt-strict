@@ -1,2 +1,2 @@
-apt-strict-depends.py usr/sbin
+apt-strict.py usr/sbin
 

@@ -157,6 +157,7 @@ def resolve_deps(package_name, package_list, cache):
 
 
 def resolve_all(cache, packages, ACTION, FORCE):
+    '''Resolve dependencies for everything in packages'''
 
     orig_packages=packages.copy()
 
@@ -210,7 +211,8 @@ def resolve_all(cache, packages, ACTION, FORCE):
     debug('result: \n' + pformat(packages))
 
 
-def main(packages, cache, ACTION, FORCE):
+def main(cache, packages, ACTION, FORCE):
+    '''main action, specified by options'''
     # Already installed packages excluded from list for 'install-only-new', so actions are similar
     if ACTION in ('install', 'install-only-new'):
 
