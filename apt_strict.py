@@ -50,7 +50,7 @@ def report_changes(cache, result=None):
     return output
 
 
-def mark_changes(package_list, cache):
+def mark_changes(cache, package_list):
     """Mark changes from list in cache"""
     # packlage_list = {'name': {'version': 'x', 'resolved': False}}
     debug('mark_changes()')
@@ -254,7 +254,7 @@ def main(cache, packages, ACTION, FORCE):
 
 LOOP_LIMIT = 10000
 
-    if __name__ == '__main__':
+if __name__ == '__main__':
 
     # Parse command-line arguments
     parser = OptionParser(usage='Usage: %prog [options] install|install-only-new|resolve|resolve-only-new pkg1=version1 pkg2 ...')
@@ -289,11 +289,11 @@ LOOP_LIMIT = 10000
     cache = apt.cache.Cache()
 
     # Resolve dependencies and store in packages
-    resolve_all(packages, cache, ACTION, FORCE)
+    resolve_all(cache, packages, ACTION, FORCE)
 
-    mark_changes(packages, cache)
+    mark_changes(cache, packages)
 
     # Perform specified ACTION
-    main(packages, cache, ACTION, FORCE)
+    main(cache, packages, ACTION, FORCE)
 
     sys.exit(0)
