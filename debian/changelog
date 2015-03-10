@@ -1,5 +1,5 @@
 apt-strict (0.1) unstable; urgency=low
 
-  * Initial Release.
+  * Initial Release. Uses python apt bindings for all operations
 
  -- Pavel Selivanov <techpriest@yandex-team.ru>  Mon, 11 Jan 2015 13:20:00 +0300
