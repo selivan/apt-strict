@@ -15,6 +15,10 @@ def debug(message):
     if DEBUG: print >> sys.stderr, message
 
 
+def info(message):
+    print message
+
+
 def report_changes(cache, result=None):
     """Return string - all marked changes in cache.
     Optionaly write detailed changes to result dict:
@@ -215,7 +219,7 @@ def main(cache, packages, ACTION, FORCE):
     if ACTION in ('install', 'install-only-new'):
 
         changes={}
-        print report_changes(cache, changes)
+        info(report_changes(cache, changes))
 
         if cache.broken_count != 0:
             die('Broken packages: %d' % cache.broken_count)
@@ -242,7 +246,7 @@ def main(cache, packages, ACTION, FORCE):
             die('Failed to commit changes: %s' % str(e))
 
     elif ACTION in ('resolve', 'resolve-only-new'):
-        print report_changes(cache)
+        info(report_changes(cache))
     else:
         parser.print_usage()
         die('Unknown action %s' % ACTION)
@@ -283,7 +287,7 @@ if __name__ == '__main__':
         else:
             packages[i.split('=')[0]] = {'version': i.split('=')[1], 'resolved': False}
 
-    # Initilize apt cache interface
+    debug('Initilizing apt cache interface')
     cache = apt.cache.Cache()
 
     # Resolve dependencies and store in packages
