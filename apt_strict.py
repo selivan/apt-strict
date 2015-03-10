@@ -94,14 +94,12 @@ def resolve_deps(package_name, package_list, cache):
 
     # No version given - don't mess with it, let apt think
     if package_props['version'] is None or package_props['version'] == '':
-        # debug('no explicit version required for %s - will not be checked futher' % package_name)
-        # package_list[package_name]['resolved'] = True
-        debug('no explicit version required for %s - will use candidate version' % package_name)
-        ver = pkg.candidate.version
-
+        ver = pkg.candidate
+        debug('no explicit version required for %s - will use candidate version %s' % (package_name, ver.version))
     # Explicit version given - let's resolve it
-    if package_props['version'] in pkg.versions.keys():
+    elif package_props['version'] in pkg.versions.keys():
         ver = pkg.versions[package_props['version']]
+        debug('explicit version %s required for %s' % (ver.version, package_name))
     else:
         die('Version %s for package %s not found' % (package_props['version'], package_name))
         ver = None # never happens, just to supress PyCharm warning
