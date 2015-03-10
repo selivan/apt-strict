@@ -1,0 +1,15 @@
+Source: apt-strict
+Section: misc
+Priority: extra
+Maintainer: Pavel Selivanov <techpriest@yandex-team.ru>
+Build-Depends: debhelper (>= 8.0.0)
+Standards-Version: 3.9.2
+#Homepage: <insert the upstream URL, if relevant>
+Vcs-Browser: https://github.com/selivan/apt-strict
+
+Package: apt-strict
+Architecture: all
+Depends: ${shlibs:Depends}, ${misc:Depends}, python-apt
+Description: Install precise versions of exactly pointed dependencies: libxxx=0.2
+ Install precise versions of exactly pointed dependencies: libxxx=0.2
+ On the contrary, APT always install highest avaliable.
