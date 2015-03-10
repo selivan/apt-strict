@@ -1,13 +1,14 @@
 _apt_strict()
 {
-    local cur prev words cword
-    _init_completion || return
+    local cur prev
+	# different versions of bash-completion
+    _init_completion 2>/dev/null || _get_comp_words_by_ref cur prev 2>/dev/null || return
 
     local special i
 
-    for (( i=0; i < ${#words[@]}-1; i++ )); do
-        if [[ ${words[i]} == @(install|install-only-new|resolve|resolve-only-new) ]]; then
-            special=${words[i]}
+    for (( i=0; i < ${#COMP_WORDS[@]}-1; i++ )); do
+        if [[ ${COMP_WORDS[i]} == @(install|install-only-new|resolve|resolve-only-new) ]]; then
+            special=${COMP_WORDS[i]}
         fi
     done
 

@@ -51,6 +51,13 @@ def report_changes(cache, result=None):
     elif len(upgrade) != 0:
         output += '\nUpgrade:%d: ' % len(upgrade)
         output += ' '.join(str(i[0])+'='+str(i[1]) for i in upgrade)
+    if result is not None:
+        result['delete'] = delete
+        result['downgrade'] = downgrade
+        result['install'] = install
+        result['keep'] = keep
+        result['reinstall'] = reinstall
+        result['upgrade'] = upgrade
     return output
 
 
@@ -96,7 +103,7 @@ def resolve_deps(package_name, package_list, cache):
     package_props = package_list[package_name]
     pkg = cache[package_name]
 
-    # No version given - don't mess with it, let apt think
+    # No version given - use candidate
     if package_props['version'] is None or package_props['version'] == '':
         ver = pkg.candidate
         debug('no explicit version required for %s - will use candidate version %s' % (package_name, ver.version))
@@ -163,9 +170,12 @@ def resolve_all(cache, packages, ACTION, FORCE):
 
     orig_packages=packages.copy()
 
+    debug('orig_packages: ' + pformat(orig_packages))
+
     # Clean from already installed for 'install-only-new'
+    # not in cache - for virtual packages
     if ACTION in ('install-only-new', 'resolve-only-new'):
-        packages = { k:v for k,v in orig_packages if cache[k].installed is None }
+        packages = { k:v for k,v in orig_packages.iteritems() if k not in cache or cache[k].installed is None }
 
     # First cycle - resolve packages with explicit versions
     loop_counter = 0
@@ -231,9 +241,16 @@ def main(cache, packages, ACTION, FORCE):
             if not FORCE:
                 die('Need to delete some packages to proceed - abort')
             else:
-                debug('Run commit first time - to delete packages')
+                debug('Run additional commit - to delete packages')
                 cache.commit()
                 mark_changes(packages, cache)
+                info(report_changes(cache, changes))
+
+        if len(changes['downgrade']) != 0:
+                debug('Run additional commit - to downgrade packages')
+                cache.commit()
+                mark_changes(packages, cache)
+                info(report_changes(cache, changes))
 
         try:
             cache.fetch_archives()
@@ -260,9 +277,10 @@ if __name__ == '__main__':
 
     # Parse command-line arguments
     parser = OptionParser(usage='Usage: %prog [options] install|install-only-new|resolve|resolve-only-new pkg1=version1 pkg2 ...')
-    parser.add_option('--debug', action='store_true', dest='DEBUG', default=False, help='Enable debugging')
     parser.add_option('-f', '--force-delete', dest='FORCE', default=False, help='Delete packages if necessary')
-    #parser.add_option('-t', '--target-release', dest='TARGET', help='Do all actions without confirmation')
+    parser.add_option('--debug', action='store_true', dest='DEBUG', default=False, help='Enable debugging')
+    # parser.add_option('--json', action='store_true', dest='JSON', default=False, help='Print output in JSON')
+    # parser.add_option('-t', '--target-release', dest='TARGET', help='Do all actions without confirmation')
 
     options, args = parser.parse_args()
     if len(args) < 2:
@@ -276,6 +294,7 @@ if __name__ == '__main__':
 
     DEBUG = options.DEBUG
     FORCE = options.FORCE
+    # JSON = options.JSON
     # TARGET = options.TARGET
 
     # {'name': {'version': 'x', 'resolved': False}}
