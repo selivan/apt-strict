@@ -1,2 +1,2 @@
-apt-strict.py usr/sbin
+apt_strict.py usr/share/apt-strict
 
