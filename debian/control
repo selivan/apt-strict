@@ -4,7 +4,7 @@ Priority: extra
 Maintainer: Pavel Selivanov <techpriest@yandex-team.ru>
 Build-Depends: debhelper (>= 8.0.0)
 Standards-Version: 3.9.2
-#Homepage: <insert the upstream URL, if relevant>
+Homepage: https://github.com/selivan/apt-strict
 Vcs-Browser: https://github.com/selivan/apt-strict
 
 Package: apt-strict
