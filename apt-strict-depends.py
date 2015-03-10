@@ -1,4 +1,4 @@
-#/usr/bin/env python2
+#!/usr/bin/env python2
 
 import apt
 import sys
@@ -15,8 +15,11 @@ def debug(message):
     if DEBUG: print >> sys.stderr, message
 
 
-def report_changes(cache):
-    """Return string - all marked changes in cache"""
+def report_changes(cache, result=None):
+    """Return string - all marked changes in cache.
+    Optionaly write detailed changes to result dict:
+    {'delete': ['pkg1', 'pkg2'], 'downgrade': ['pkg3', 'pkg4'], ...}
+    """
     delete = []; downgrade = []; install = []; keep = []; reinstall = []; upgrade = []
     for pkg in cache.get_changes():
         if   pkg.marked_delete:    delete.append((pkg.name, pkg.candidate.version))
@@ -25,74 +28,79 @@ def report_changes(cache):
         elif pkg.marked_keep:      keep.append((pkg.name, pkg.candidate.version))
         elif pkg.marked_reinstall: reinstall.append((pkg.name, pkg.candidate.version))
         elif pkg.marked_upgrade:   upgrade.append((pkg.name, pkg.candidate.version))
-    result = ''
+    output = ''
     if len(delete) != 0:
-        result += '\nDelete:%d: ' % len(delete)
-        result += ' '.join(str(i[0])+'='+str(i[1]) for i in delete)
+        output += '\nDelete:%d: ' % len(delete)
+        output += ' '.join(str(i[0])+'='+str(i[1]) for i in delete)
     elif len(downgrade) != 0:
-        result += '\nDowngrade:%d: ' % len(downgrade)
-        result += ' '.join(str(i[0])+'='+str(i[1]) for i in downgrade)
+        output += '\nDowngrade:%d: ' % len(downgrade)
+        output += ' '.join(str(i[0])+'='+str(i[1]) for i in downgrade)
     elif len(install) != 0:
-        result += '\nInstall:%d: ' % len(install)
-        result += ' '.join(str(i[0])+'='+str(i[1]) for i in install)
+        output += '\nInstall:%d: ' % len(install)
+        output += ' '.join(str(i[0])+'='+str(i[1]) for i in install)
     elif len(keep) != 0:
-        result += '\nKeep:%d: ' % len(keep)
-        result += ' '.join(str(i[0])+'='+str(i[1]) for i in keep)
+        output += '\nKeep:%d: ' % len(keep)
+        output += ' '.join(str(i[0])+'='+str(i[1]) for i in keep)
     elif len(reinstall) != 0:
-        result += '\nReinstall:%d: ' % len(reinstall)
-        result += ' '.join(str(i[0])+'='+str(i[1]) for i in reinstall)
+        output += '\nReinstall:%d: ' % len(reinstall)
+        output += ' '.join(str(i[0])+'='+str(i[1]) for i in reinstall)
     elif len(upgrade) != 0:
-        result += '\nUpgrade:%d: ' % len(upgrade)
-        result += ' '.join(str(i[0])+'='+str(i[1]) for i in upgrade)
-    return result
+        output += '\nUpgrade:%d: ' % len(upgrade)
+        output += ' '.join(str(i[0])+'='+str(i[1]) for i in upgrade)
+    return output
 
 
 def mark_changes(package_list, cache):
     """Mark changes from list in cache"""
     # packlage_list = {'name': {'version': 'x', 'resolved': False}}
+    debug('mark_changes()')
     for k,v in package_list.iteritems():
         if v['version'] is not None and v['version'] != '':
             if v['version'] not in cache[k].versions:
                 die('Could not find %s version %s in cache' % (k, v['version']))
+            debug('change cache: candidate %s=%s' % (k, v['version']))
             cache[k].candidate = cache[k].versions[v['version']]
-        cache[k].mark_install()
+        debug('cache[%s].mark_install' % k)
+        cache[k].mark_install(auto_fix=False)
+    resolver = apt.cache.ProblemResolver(cache)
+    try:
+        resolver.resolve()
+    except Exception, e:
+        die('Failed to resolve conflicts: %s' % str(e))
 
 
 def resolve_deps(package_name, package_list, cache):
     """Resolve package dependencies and add them to package_list
     package_name indicates entry in package_list"""
-    # debug('resolve_deps(%s)' % package_name)
+    debug('resolve_deps(%s)' % package_name)
 
     # Check correct call
     if package_list[package_name]['resolved']:
         debug('resolve_deps incorrect call: package %s already resolved' % package_name)
         return
 
-    # Virtual package handling
-    if package_name not in package_list:
-        providing = cache.get_providing_packages(package_name)
+    # Virtual package - do not mess with it, let apt think
+    if package_name not in cache:
+        providing = [ i.name for i in cache.get_providing_packages(package_name) ]
         if len(providing) == 0:
-            die('resolve_deps incorrect call: %s is not in package_list and is not virtual package' % package_name)
-        # try to mark apropriate package providing
+            die('error in resolve_deps: %s is virtual package and no one can provide it' % package_name)
         else:
-            debug('%s is virtual package, trying to resolve...' % package_name)
-            # get current machine architecture
-            arch = cache['dpkg'].candidate.architecture
-            for pkg in providing:
-                if pkg in cache and ( cache[pkg].candidate.architecture == arch or arch == 'all' ):
-                    if pkg not in package_list:
-                        package_list[pkg] = {'version': None, 'resolved': False}
-                    return
-            else: # for
-                die('resolve_deps failed: no package can provide virtual package %s' % package_name)
+            debug('virtual package %s - will not be checked futher' % package_name)
+            package_list[package_name]['resolved'] = True
+            return
 
     package_props = package_list[package_name]
-
-    # Get required package version
     pkg = cache[package_name]
+
+    # No version given - don't mess with it, let apt think
     if package_props['version'] is None or package_props['version'] == '':
-        ver = pkg.candidate
-    elif package_props['version'] in pkg.versions.keys():
+        # debug('no explicit version required for %s - will not be checked futher' % package_name)
+        # package_list[package_name]['resolved'] = True
+        debug('no explicit version required for %s - will use candidate version' % package_name)
+        ver = pkg.candidate.version
+
+    # Explicit version given - let's resolve it
+    if package_props['version'] in pkg.versions.keys():
         ver = pkg.versions[package_props['version']]
     else:
         die('Version %s for package %s not found' % (package_props['version'], package_name))
@@ -115,17 +123,21 @@ def resolve_deps(package_name, package_list, cache):
 
             # One of dependencies variant is installed
             if bdep.name in cache and cache[bdep.name].installed is not None:
+                debug('already installed: %s' % bdep.name)
                 # Found installed dependency for which we need precise version
                 if bdep.relation == '=':
                     package_list[bdep.name] = {'version': bdep.version, 'resolved': bdep_resolved}
+                    debug('added dependency with excplicit version: %s=%s' % (bdep.name, bdep.version))
                 else:
-                    package_list[bdep.name] = {'version': None, 'resolved': bdep_resolved}
+                    # package_list[bdep.name] = {'version': None, 'resolved': bdep_resolved}
+                    debug('found dependency without explicit version - do not add: %s' % bdep.name)
                 dep_resolved = True
                 break
 
         # No already installed variants found - get first
         # If precise version required - handle it
         if not dep_resolved:
+            debug('not installed: %s' % bdep.name)
             bdep = dep.or_dependencies.pop()
 
             if bdep.name in package_list:
@@ -135,8 +147,10 @@ def resolve_deps(package_name, package_list, cache):
 
             if bdep.relation == '=':
                 package_list[bdep.name] = {'version': bdep.version, 'resolved': bdep_resolved}
+                debug('added dependency with excplicit version: %s=%s' % (bdep.name, bdep.version))
             else:
-                package_list[bdep.name] = {'version': None, 'resolved': bdep_resolved}
+                # package_list[bdep.name] = {'version': None, 'resolved': bdep_resolved}
+                debug('found dependency without explicit version - do not add: %s' % bdep.name)
 
     package_list[package_name]['resolved'] = True
     # // resolve_deps
@@ -146,11 +160,10 @@ def resolve_deps(package_name, package_list, cache):
 LOOP_LIMIT = 10000
 
 # Parse command-line arguments
-# ...
-parser = OptionParser(usage='Usage: %prog [options] install|install-only-new|resolve pkg1 pkg2=version2 ...')
-parser.add_option('-d', '--debug', action='store_true', dest='debug', default=False, help='Enable debugging')
-#parser.add_option('-y', '--yes', dest='YES', help='Do all actions without confirmation')
-#parser.add_option('-s', '--simulate', dest='SIMULATE', help='simulate what will happen, no real action')
+parser = OptionParser(usage='Usage: %prog [options] install|install-only-new|resolve|resolve-only-new pkg1=version1 pkg2 ...')
+parser.add_option('--debug', action='store_true', dest='DEBUG', default=False, help='Enable debugging')
+parser.add_option('-f', '--force-delete', dest='FORCE', default=False, help='Delete packages if necessary')
+#parser.add_option('-t', '--target-release', dest='TARGET', help='Do all actions without confirmation')
 
 options, args = parser.parse_args()
 if len(args) < 2:
@@ -158,11 +171,13 @@ if len(args) < 2:
     die('Too few arguments')
 
 ACTION = args[0]
-if ACTION not in ('install', 'install-only-new', 'resolve'):
+if ACTION not in ('install', 'install-only-new', 'resolve', 'resolve-only-new'):
     parser.print_help()
     die('Invalid argument %s')
 
-DEBUG = options.debug
+DEBUG = options.DEBUG
+FORCE = options.FORCE
+# TARGET = options.TARGET
 
 # {'name': {'version': 'x', 'resolved': False}}
 packages = {}
@@ -179,7 +194,7 @@ orig_packages=packages.copy()
 cache = apt.cache.Cache()
 
 # Clean from already installed for 'install-only-new'
-if ACTION == 'install-only-new':
+if ACTION in ('install-only-new', 'resolve-only-new'):
     packages = { k:v for k,v in orig_packages if cache[k].installed is None }
 
 # First cycle - resolve packages with explicit versions
@@ -215,13 +230,13 @@ while not loop_finished:
         die('Failed(2) to resolve dependencies in %d loops' % LOOP_LIMIT)
 
 debug('# packages resolved: %d' % len(packages))
-# Clear list from already installed packages without  explicit versions
-tmp = {k:v for (k,v) in packages.iteritems() if cache[k].installed is None or v['version'] is not None }
+# Clear list from already installed packages without explicit versions
+tmp = {k:v for (k,v) in packages.iteritems() if k in cache and ( cache[k].installed is None or v['version'] is not None ) }
 packages=tmp
 debug('# packages after first cleanup: %d' % len(packages))
 # Clear list from already installed packages with necessary version
 # TODO
-tmp = {k:v for (k,v) in packages.iteritems() if not ( cache[k].installed is not None and cache[k].installed.version == v['version'] ) }
+tmp = {k:v for (k,v) in packages.iteritems() if k in cache and not ( cache[k].installed is not None and cache[k].installed.version == v['version'] ) }
 packages=tmp
 debug('# packages after second cleanup: %d' % len(packages))
 
@@ -230,9 +245,10 @@ debug('result: \n' + pformat(packages))
 mark_changes(packages, cache)
 
 # Already installed packages excluded from list for 'install-only-new', so actions are similar
-if ACTION == 'install' or ACTION == 'install-only-new':
+if ACTION in ('install', 'install-only-new'):
 
-    print report_changes(cache)
+    changes={}
+    print report_changes(cache, changes)
 
     if cache.broken_count != 0:
         die('Broken packages: %d' % cache.broken_count)
@@ -240,17 +256,25 @@ if ACTION == 'install' or ACTION == 'install-only-new':
     if cache.dpkg_journal_dirty:
         die('dpkg was interrupted. Try to fix: dpkg --configure -a')
 
+    if len(changes['delete']) != 0:
+        if not FORCE:
+            die('Need to delete some packages to proceed - abort')
+        else:
+            debug('Run commit first time - to delete packages')
+            cache.commit()
+            mark_changes(packages, cache)
+
     try:
         cache.fetch_archives()
     except Exception, e:
-        die('Failed to fetch archives: %s' % e.__str__())
+        die('Failed to fetch archives: %s' % str(e))
 
     try:
         cache.commit()
     except Exception, e:
-        die('Failed to commit changes')
+        die('Failed to commit changes: %s' % str(e))
 
-elif ACTION == 'resolve':
+elif ACTION in ('resolve', 'resolve-only-new'):
     print report_changes(cache)
 else:
     parser.print_usage()
