@@ -17,7 +17,7 @@ _apt_strict()
     fi
 
     if [[ "$cur" == -* ]]; then
-        COMPREPLY=( $( compgen -W '--debug -f --force-delete' -- "$cur" ) )
+        COMPREPLY=( $( compgen -W '--debug -f --force-delete -h --help' -- "$cur" ) )
     else
         COMPREPLY=( $( compgen -W 'install install-only-new resolve resolve-only-new' -- "$cur" ) )
     fi
