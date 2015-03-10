@@ -1,0 +1,28 @@
+_apt_strict()
+{
+    local cur prev words cword
+    _init_completion || return
+
+    local special i
+
+    for (( i=0; i < ${#words[@]}-1; i++ )); do
+        if [[ ${words[i]} == @(install|install-only-new|resolve|resolve-only-new) ]]; then
+            special=${words[i]}
+        fi
+    done
+
+    if [[ -n $special ]]; then
+        COMPREPLY=( $( apt-cache --no-generate pkgnames "$cur" 2> /dev/null ) )
+        return 0
+    fi
+
+    if [[ "$cur" == -* ]]; then
+        COMPREPLY=( $( compgen -W '--debug -f --force-delete' -- "$cur" ) )
+    else
+        COMPREPLY=( $( compgen -W 'install install-only-new resolve resolve-only-new' -- "$cur" ) )
+    fi
+
+    return 0
+}
+
+complete -F _apt_strict apt-strict

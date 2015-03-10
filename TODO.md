@@ -6,4 +6,4 @@ python package
 
 ansible module
 
-bash completion
+~~bash completion~~

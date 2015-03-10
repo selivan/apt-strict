@@ -1,2 +1,2 @@
 apt_strict.py usr/share/apt-strict
-
+bash_completion.d/apt-strict etc/bash_completion.d

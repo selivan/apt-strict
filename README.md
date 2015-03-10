@@ -15,3 +15,5 @@ http://stackoverflow.com/questions/17537390/how-to-install-a-package-using-the-p
 http://docs.ansible.com/developing_api.html
 
 http://docs.ansible.com/developing_modules.html
+
+http://fahdshariff.blogspot.ru/2011/04/writing-your-own-bash-completion.html
