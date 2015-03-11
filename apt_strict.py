@@ -193,12 +193,12 @@ def resolve_all(cache, package_list, ACTION):
             die('Failed(2) to resolve dependencies in %d loops' % LOOP_LIMIT)
 
     debug('# packages resolved: %d' % len(package_list))
-    # Clear list from already installed packages without explicit versions
-    tmp = {k:v for (k,v) in package_list.iteritems() if k in cache and ( cache[k].installed is None or v['version'] is not None ) }
-    package_list = tmp
-    debug('# packages after first cleanup: %d' % len(package_list))
-    # Clear list from already installed packages with necessary version
     if ACTION != 'resolve':
+        # Clear list from already installed packages without explicit versions
+        tmp = {k:v for (k,v) in package_list.iteritems() if k in cache and ( cache[k].installed is None or v['version'] is not None ) }
+        package_list = tmp
+        debug('# packages after first cleanup: %d' % len(package_list))
+        # Clear list from already installed packages with necessary version
         tmp = {k:v for (k,v) in package_list.iteritems() if k in cache and not ( cache[k].installed is not None and cache[k].installed.version == v['version'])}
         package_list = tmp
         debug('# packages after second cleanup: %d' % len(package_list))
