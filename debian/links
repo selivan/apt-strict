@@ -1,1 +1,3 @@
 /usr/share/apt_strict/apt_strict.py /usr/share/ansible/packaging/apt_strict
+/usr/share/apt_strict/executable.py /usr/sbin/apt-strict
+

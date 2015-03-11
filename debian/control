@@ -2,7 +2,7 @@ Source: apt-strict
 Section: misc
 Priority: extra
 Maintainer: Pavel Selivanov <techpriest@yandex-team.ru>
-Build-Depends: debhelper (>= 8.0.0)
+Build-Depends: debhelper (>= 8.0.0), dh-exec
 Standards-Version: 3.9.2
 Homepage: https://github.com/selivan/apt-strict
 Vcs-Browser: https://github.com/selivan/apt-strict
