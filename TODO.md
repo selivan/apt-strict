@@ -1,6 +1,6 @@
 ~~utility~~
 
-option target-release
+~~option target-release~~ - now can use all apt options, so this is included
 
 python package
 

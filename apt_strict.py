@@ -187,7 +187,7 @@ def resolve_all(cache, package_list, ACTION):
     package_list = tmp
     debug('# packages after second cleanup: %d' % len(package_list))
 
-    debug('resolve_all() result: \n' + pformat(package_list))
+    # debug('resolve_all() result: \n' + pformat(package_list))
     return package_list
 
 
