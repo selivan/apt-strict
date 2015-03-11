@@ -198,9 +198,10 @@ def resolve_all(cache, package_list, ACTION):
     package_list = tmp
     debug('# packages after first cleanup: %d' % len(package_list))
     # Clear list from already installed packages with necessary version
-    tmp = {k:v for (k,v) in package_list.iteritems() if k in cache and not ( cache[k].installed is not None and cache[k].installed.version == v['version'])}
-    package_list = tmp
-    debug('# packages after second cleanup: %d' % len(package_list))
+    if ACTION != 'resolve':
+        tmp = {k:v for (k,v) in package_list.iteritems() if k in cache and not ( cache[k].installed is not None and cache[k].installed.version == v['version'])}
+        package_list = tmp
+        debug('# packages after second cleanup: %d' % len(package_list))
 
     # debug('resolve_all() result: \n' + pformat(package_list))
     return package_list
