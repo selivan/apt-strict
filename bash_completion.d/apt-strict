@@ -1,7 +1,7 @@
 _apt_strict()
 {
     local cur prev
-	# different versions of bash-completion
+        # different versions of bash-completion
     _init_completion 2>/dev/null || _get_comp_words_by_ref cur prev 2>/dev/null || return
 
     local special i
@@ -11,11 +11,6 @@ _apt_strict()
             special=${COMP_WORDS[i]}
         fi
     done
-
-    if [[ -n $special ]]; then
-        COMPREPLY=( $( apt-cache --no-generate pkgnames "$cur" 2> /dev/null ) )
-        return 0
-    fi
 
     if [[ "$cur" == -* ]]; then
         COMPREPLY=( $( compgen -W '--debug --help
@@ -28,6 +23,9 @@ _apt_strict()
             --list-cleanup --default-release --trivial-only --no-remove
             --diff-only --no-install-recommends --tar-only --config-file
             --option --auto-remove' -- "$cur" ) )
+    elif [[ -n $special ]]; then
+        COMPREPLY=( $( apt-cache --no-generate pkgnames "$cur" 2> /dev/null ) )
+        return 0
     else
         COMPREPLY=( $( compgen -W 'install install-only-new resolve resolve-only-new' -- "$cur" ) )
     fi
