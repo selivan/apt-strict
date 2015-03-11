@@ -9,7 +9,7 @@ Vcs-Browser: https://github.com/selivan/apt-strict
 
 Package: apt-strict
 Architecture: all
-Depends: ${shlibs:Depends}, ${misc:Depends}, python-apt
+Depends: ${shlibs:Depends}, ${misc:Depends}, python-apt, ansible
 Description: Install precise versions of exactly pointed dependencies: libxxx=0.2
  Install precise versions of exactly pointed dependencies: libxxx=0.2
  On the contrary, APT always install highest avaliable.

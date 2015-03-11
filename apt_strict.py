@@ -1,30 +1,45 @@
 #!/usr/bin/env python2
 
+DOCUMENTATION = '''
+---
+module: apt_strict
+short_description: apt wrapper - installs precise versions of exactly pointed dependencies: libxx=1.2.3
+description:
+  - apt wrapper - installs precise versions of exactly pointed dependencies: libxx=1.2.3. Options are like options for apt module.
+options:
+  name:
+  state:
+  default_release:
+  install_recommends:
+  force:
+  dpkg_options:
+'''
+
+EXAMPLES = '''
+# If package is not installed already, installed it and precise versions of exactly pointed dependencies: libxx=1.2.3
+apt_strict: name=package state=present
+# Istall latest package version and precise versions of exactly pointed dependencies: libxx=1.2.3
+apt_strict: name=package state=latest
+'''
+
 import apt
 import sys
+import os
 from pprint import pprint, pformat
-import json
-from subprocess import Popen
+from subprocess import Popen, PIPE
 
+# Options
+LOOP_LIMIT = 10000
+DEBUG = False
 
 def die(message, exit_code=1):
     print >> sys.stderr, 'ERROR: ' + message
     sys.exit(exit_code)
 
 
-def debug(message, common_message=None):
+def debug(message):
     if DEBUG:
-        if common_message is None:
-            print >> sys.stderr, 'DEBUG: ' + message
-        else:
-            common_message.append('DEBUG: ' + message)
-
-
-def info(message, common_message=None):
-    if common_message is None:
-        print message
-    else:
-        common_message.append(message)
+        print >> sys.stderr, 'DEBUG: ' + message
 
 
 def print_apt_string(package_list):
@@ -191,63 +206,65 @@ def resolve_all(cache, package_list, ACTION):
     return package_list
 
 
-if __name__ == '__main__':
+def main():
+    DPKG_OPTIONS = ('force-confdef', 'force-confold')
+    module = AnsibleModule(
+        argument_spec=dict(
+            name=dict(required=True, aliases=['pkg', 'package']),
+            state=dict(default='present', choices=['latest', 'present']),
+            default_release=dict(default=None, aliases=['default-release']),
+            install_recommends=dict(default='yes', aliases=['install-recommends'], type='bool'),
+            force=dict(default='no', type='bool'),
+            dpkg_options=dict(default=DPKG_OPTIONS)
+        ),
+        supports_check_mode=False
+    )
 
-    # Options
-    LOOP_LIMIT = 10000
-    DEBUG = False
-    HELP_MESSAGE = 'Usage: %s install|install-only-new|resolve|resolve-only-new [apt-get options] pkg1=version1 pkg2 ...' % sys.argv[0]
-
-    # Parse command-line arguments
-    if '--help' in sys.argv:
-        print >> sys.stderr, HELP_MESSAGE
-        sys.exit(0)
-
-    if '--debug' in sys.argv:
-        DEBUG = True
-        sys.argv.remove('--debug')
-
-    ACTION = sys.argv[1]
-    if ACTION not in ('install', 'install-only-new', 'resolve', 'resolve-only-new'):
-        print >> sys.stderr, HELP_MESSAGE
-        die('Invalid argument %s')
+    # Parse parameters
+    if '=' in module.params['name']:
+        name, version = module.params['name'].split('=')
     else:
-        sys.argv.remove(ACTION)
+        name = module.params['name']
+        version = None
+    packages = {name: {'version': version, 'resolved': False}}
 
-    # packages = {'name': {'version': 'x', 'resolved': False}}
-    packages = {}
-    apt_get_options = ''
+    apt_get_options = ['--yes']
+    if module.params['default_release'] is not None:
+        apt_get_options.append('--target-release %s' % module.params['default_release'])
+    if not module.params['install_recommends']:
+        apt_get_options.append('--no-install-recommends')
+    if module.params['force']:
+        apt_get_options.append('--force-yes')
+    for i in module.params['dpkg_options']:
+        apt_get_options.append('-o "Dpkg::Options::=--%s"' % i)
 
-    del sys.argv[0]
-    while len(sys.argv) != 0:
-        i = sys.argv[0]
+    if module.params['state'] == 'present':
+        ACTION = 'install-only-new'
+    elif module.params['state'] == 'latest':
+        ACTION = 'install'
 
-        # primitive filtration of dangerous typos - we are running as root
-        for j in ';', '|', '&', '(', ')', '{', '}':
-            if j in i:
-                die('Incorrect argument: %s' % j)
-
-        if i[0] == '-':
-            apt_get_options += i + ' '
-            sys.argv.remove(i)
-        elif '=' not in i:
-            packages[i] = {'version': None, 'resolved': False}
-            sys.argv.remove(i)
-        else:
-            packages[i.split('=')[0]] = {'version': i.split('=')[1], 'resolved': False}
-            sys.argv.remove(i)
-
-    debug('Initilizing apt cache interface')
+    # Initilize apt cache interface
     cache = apt.cache.Cache()
 
-    # Resolve dependencies and store in packages
+    # Resolve dependencies
     packages = resolve_all(cache, packages, ACTION)
 
-    if ACTION in ('resolve', 'resolve-only-new'):
-        info(print_apt_string(packages))
-        sys.exit(0)
+    if len(packages) == 0:
+        module.exit_json(changed=False)
+
+    # Create command line and run
+    apt_get_options = ' '.join(apt_get_options)
+    cmd = 'apt-get ' + apt_get_options + ' install ' + print_apt_string(packages)
+    os.environ['DEBIAN_FRONTEND'] = 'noninteractive'
+    proc = Popen(cmd, shell=True, stdout=PIPE, stderr=PIPE)
+    out, err = proc.communicate()
+
+    if proc.returncode == 0:
+        module.exit_json(changed=True, command=cmd, stdout=out, stderr=err)
     else:
-        cmd = 'apt-get ' + apt_get_options + 'install' + print_apt_string(packages)
-        debug('command to run:\n' + cmd)
-        proc = Popen(cmd, shell=True)
-        sys.exit(proc.wait())
+        module.fail_json(command=cmd, msg="Failed to execute apt-get", stdout=out, stderr=err)
+
+from ansible.module_utils.basic import *
+
+if __name__ == '__main__':
+    main()
