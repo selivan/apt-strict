@@ -1,3 +1,10 @@
+apt-strict (0.2) unstable; urgency=medium
+
+  * Just resolves dependencies, calls apt-get for all operations. Much
+    simplier.
+
+ -- Pavel Selivanov <techpriest@yandex-team.ru>  Wed, 11 Mar 2015 14:52:22 +0300
+
 apt-strict (0.1) unstable; urgency=low
 
   * Initial Release. Uses python apt bindings for all operations
