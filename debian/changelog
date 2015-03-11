@@ -1,3 +1,9 @@
+apt-strict (0.3) unstable; urgency=medium
+
+  * Ansible module
+
+ -- Pavel Selivanov <techpriest@yandex-team.ru>  Wed, 11 Mar 2015 22:12:51 +0300
+
 apt-strict (0.2) unstable; urgency=medium
 
   * Just resolves dependencies, calls apt-get for all operations. Much
