@@ -1,6 +1,5 @@
-#!/usr/bin/env python2
-
-DOCUMENTATION = '''
+#!/usr/bin/python
+'''
 ---
 module: apt_strict
 short_description: apt wrapper - installs precise versions of exactly pointed dependencies: libxx=1.2.3
@@ -15,16 +14,11 @@ options:
   dpkg_options:
 '''
 
-EXAMPLES = '''
-# If package is not installed already, installed it and precise versions of exactly pointed dependencies: libxx=1.2.3
-apt_strict: name=package state=present
-# Istall latest package version and precise versions of exactly pointed dependencies: libxx=1.2.3
-apt_strict: name=package state=latest
-'''
-
 import apt
 import sys
 import os
+import json
+import shlex
 from pprint import pprint, pformat
 from subprocess import Popen, PIPE
 
@@ -207,41 +201,71 @@ def resolve_all(cache, package_list, ACTION):
     return package_list
 
 
-def main():
-    DPKG_OPTIONS = ('force-confdef', 'force-confold')
-    module = AnsibleModule(
-        argument_spec=dict(
-            name=dict(required=True, aliases=['pkg', 'package']),
-            state=dict(default='present', choices=['latest', 'present']),
-            default_release=dict(default=None, aliases=['default-release']),
-            install_recommends=dict(default='yes', aliases=['install-recommends'], type='bool'),
-            force=dict(default='no', type='bool'),
-            dpkg_options=dict(default=DPKG_OPTIONS)
-        ),
-        supports_check_mode=False
-    )
+def die_module(msg):
+    print json.dumps({
+    "failed" : True,
+    "msg": msg
+    })
+    sys.exit(0)
+
+
+if __name__ == '__main__':
 
     # Parse parameters
-    if '=' in module.params['name']:
-        name, version = module.params['name'].split('=')
+    args_file = sys.argv[1]
+    args_data = file(args_file).read()
+    arguments = shlex.split(args_data)
+    params = {'name': None, 'state': 'present', 'install_recommends': True, 'force': False,
+              'default_release': None,
+              'dpkg_options': ('force-confdef', 'force-confold')}
+    for arg in arguments:
+        if "=" in arg:
+            (key, value) = arg.split("=")
+            if key in ("name", "pkg", "package"):
+                params["name"] = value
+            elif key == "state":
+                if value in ('latest', 'present'):
+                    params[key] = value
+                else:
+                    die_module('Wrong state value %s' % value)
+            elif key == 'default_release':
+                params[key] = value
+            elif key in ('install_recommends', 'install-recommends'):
+                if value in ("yes", "on"):
+                    params['install_recommends'] = True
+                else:
+                    params['install_recommends'] = False
+            elif key == 'force':
+                if value in ("yes", "on"):
+                    params['force'] = True
+                else:
+                    params['force'] = False
+            elif key == 'dpkg_options':
+                params['dpkg_options'] = value.split(',')
+    if params['name'] is None:
+        die_module('name parameter should be set')
+
+    # Parse parameters
+    if '=' in params['name']:
+        name, version = params['name'].split('=')
     else:
-        name = module.params['name']
+        name = params['name']
         version = None
     packages = {name: {'version': version, 'resolved': False}}
 
     apt_get_options = ['--yes']
-    if module.params['default_release'] is not None:
-        apt_get_options.append('--target-release %s' % module.params['default_release'])
-    if not module.params['install_recommends']:
+    if params['default_release'] is not None:
+        apt_get_options.append('--target-release %s' % params['default_release'])
+    if not params['install_recommends']:
         apt_get_options.append('--no-install-recommends')
-    if module.params['force']:
+    if params['force']:
         apt_get_options.append('--force-yes')
-    for i in module.params['dpkg_options']:
+    for i in params['dpkg_options']:
         apt_get_options.append('-o "Dpkg::Options::=--%s"' % i)
 
-    if module.params['state'] == 'present':
+    if params['state'] == 'present':
         ACTION = 'install-only-new'
-    elif module.params['state'] == 'latest':
+    elif params['state'] == 'latest':
         ACTION = 'install'
 
     # Initilize apt cache interface
@@ -251,7 +275,8 @@ def main():
     packages = resolve_all(cache, packages, ACTION)
 
     if len(packages) == 0:
-        module.exit_json(changed=False)
+        print json.dumps({'changed': False})
+        sys.exit(0)
 
     # Create command line and run
     apt_get_options = ' '.join(apt_get_options)
@@ -261,11 +286,9 @@ def main():
     out, err = proc.communicate()
 
     if proc.returncode == 0:
-        module.exit_json(changed=True, command=cmd, stdout=out, stderr=err)
+        print json.dumps({'changed': True, 'command': cmd, 'stdout': out, 'stderr': err})
+        sys.exit(0)
     else:
-        module.fail_json(command=cmd, msg="Failed to execute apt-get", stdout=out, stderr=err)
+        print json.dumps({'failed': True, 'msg': 'apt-get returned non-zero exit code', 'command': cmd, 'stdout': out, 'stderr': err})
+        sys.exit(0)
 
-from ansible.module_utils.basic import *
-
-if __name__ == '__main__':
-    main()
