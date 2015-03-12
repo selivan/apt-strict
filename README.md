@@ -24,7 +24,7 @@ Options have same meaning as in apt module:
  - force
  - dpkg_options
 
-Does not support ansible-playbook --check
+Does not support `ansible-playbook --check`
 
 ## Links
 
