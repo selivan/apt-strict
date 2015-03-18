@@ -19,13 +19,12 @@ import sys
 import os
 import json
 import shlex
-from pprint import pprint, pformat
+from pprint import pformat
 from subprocess import Popen, PIPE
 
 # Options
 LOOP_LIMIT = 10000
 DEBUG = False
-
 
 def die_standalone(msg, exit_code=1):
     print >> sys.stderr, 'ERROR: ' + msg
@@ -209,7 +208,6 @@ def resolve_all(cache, package_list, ACTION):
         package_list = tmp
         debug('# packages after second cleanup: %d' % len(package_list))
 
-    # debug('resolve_all() result: \n' + pformat(package_list))
     return package_list
 
 
