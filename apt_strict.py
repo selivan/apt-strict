@@ -26,9 +26,21 @@ from subprocess import Popen, PIPE
 LOOP_LIMIT = 10000
 DEBUG = False
 
-def die(message, exit_code=1):
-    print >> sys.stderr, 'ERROR: ' + message
+
+def die_standalone(msg, exit_code=1):
+    print >> sys.stderr, 'ERROR: ' + msg
     sys.exit(exit_code)
+
+
+def die_module(msg, exit_code=0):
+    print json.dumps({
+    "failed" : True,
+    "msg": msg
+    })
+    sys.exit(exit_code)
+
+
+die = die_module
 
 
 def debug(message):
@@ -199,14 +211,6 @@ def resolve_all(cache, package_list, ACTION):
 
     # debug('resolve_all() result: \n' + pformat(package_list))
     return package_list
-
-
-def die_module(msg):
-    print json.dumps({
-    "failed" : True,
-    "msg": msg
-    })
-    sys.exit(0)
 
 
 if __name__ == '__main__':

@@ -1,4 +1,3 @@
-#!/usr/bin/dh-exec
 apt_strict.py usr/share/apt_strict/
 executable.py usr/share/apt_strict/
 bash_completion.d/apt-strict etc/bash_completion.d

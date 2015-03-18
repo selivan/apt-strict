@@ -2,7 +2,6 @@
 
 import apt
 import sys
-from pprint import pprint, pformat
 from subprocess import Popen, PIPE
 import imp
 
@@ -20,6 +19,8 @@ if apt_strict is None:
 HELP_MESSAGE = 'Usage: %s install|install-only-new|resolve|resolve-only-new [apt-get options] pkg1=version1 pkg2 ...' % sys.argv[0]
 
 if __name__ == '__main__':
+
+    apt_strict.die = apt_strict.die_standalone
 
     # Parse command-line arguments
     if '--help' in sys.argv:
