@@ -221,8 +221,10 @@ if __name__ == '__main__':
               'default_release': None,
               'dpkg_options': ('force-confdef', 'force-confold')}
     for arg in arguments:
-        if "=" in arg:
-            (key, value) = arg.split("=")
+        if arg.count("=") in (1, 2):
+            chunks = arg.split("=")
+            key = chunks[0]
+            value = "=".join(chunks[1:])
             if key in ("name", "pkg", "package"):
                 params["name"] = value
             elif key == "state":
@@ -244,6 +246,8 @@ if __name__ == '__main__':
                     params['force'] = False
             elif key == 'dpkg_options':
                 params['dpkg_options'] = value.split(',')
+        else:
+            die_module('Invalid argument: %s' % arg)
     if params['name'] is None:
         die_module('name parameter should be set')
 
@@ -293,4 +297,3 @@ if __name__ == '__main__':
     else:
         print json.dumps({'failed': True, 'msg': 'apt-get returned non-zero exit code', 'command': cmd, 'stdout': out, 'stderr': err})
         sys.exit(0)
-
