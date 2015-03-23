@@ -1,6 +1,12 @@
+apt-strict (0.5) unstable; urgency=medium
+
+  * Ansible module: fixed incorrect argument parsing
+
+ -- Pavel Selivanov <techpriest@yandex-team.ru>  Thu, 19 Mar 2015 21:27:55 +0300
+
 apt-strict (0.4) unstable; urgency=medium
 
-  * Ansible module: throw ansible apt interface, use simple json input/output
+  * Ansible module: use simple json input/output instead of ansible apt interface
 
  -- Pavel Selivanov <techpriest@yandex-team.ru>  Thu, 12 Mar 2015 15:07:22 +0300
 
