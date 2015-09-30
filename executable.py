@@ -34,7 +34,7 @@ if __name__ == '__main__':
     ACTION = sys.argv[1]
     if ACTION not in ('install', 'install-only-new', 'resolve', 'resolve-only-new'):
         print >> sys.stderr, HELP_MESSAGE
-        apt_strict.die('Invalid argument %s')
+        apt_strict.die('Invalid argument %s' % ACTION)
     else:
         sys.argv.remove(ACTION)
 
