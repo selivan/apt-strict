@@ -1,6 +1,6 @@
 #!/usr/bin/env python2
 
-import apt
+# import apt
 import sys
 from subprocess import Popen, PIPE
 import imp
@@ -43,6 +43,7 @@ if __name__ == '__main__':
     apt_get_options = ''
 
     del sys.argv[0]
+    prev_opt = ''
     while len(sys.argv) != 0:
         i = sys.argv[0]
 
@@ -54,12 +55,17 @@ if __name__ == '__main__':
         if i[0] == '-':
             apt_get_options += i + ' '
             sys.argv.remove(i)
+        elif ( prev_opt == '-o' ) and ( i.find( 'Dpkg::Options::=' ) == 0 ):
+            apt_get_options += i + ' '
+            sys.argv.remove(i)
         elif '=' not in i:
             packages[i] = {'version': None, 'resolved': False}
             sys.argv.remove(i)
         else:
             packages[i.split('=')[0]] = {'version': i.split('=')[1], 'resolved': False}
             sys.argv.remove(i)
+
+        prev_opt = i
 
     apt_strict.debug('Initilizing apt cache interface')
     cache = apt.cache.Cache()
