@@ -1,6 +1,6 @@
 #!/usr/bin/env python2
 
-# import apt
+import apt
 import sys
 from subprocess import Popen, PIPE
 import imp
