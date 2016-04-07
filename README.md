@@ -26,7 +26,7 @@ Options have same meaning as in apt module:
 
 Does not support `ansible-playbook --check`
 
-### max os x installation
+### Mac OS X installation
 You can install ansible module via brew (without any apt stuff):
 
     brew tap apt-strict/tap git@github.com:selivan/apt-strict.git
@@ -40,3 +40,5 @@ http://apt.alioth.debian.org/python-apt-doc/
 http://fahdshariff.blogspot.ru/2011/04/writing-your-own-bash-completion.html
 
 http://docs.ansible.com/developing_modules.html
+
+**P.S.** If this code is useful for you - don't forget to put a star on it's [github repo](https://github.com/selivan/apt-strict).
