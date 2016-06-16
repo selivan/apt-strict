@@ -24,7 +24,7 @@ Options have same meaning as in apt module:
  - force
  - dpkg_options
 
-Does not support `ansible-playbook --check`
+Does not support `ansible-playbook --check`. Since ansible 2.1, you can use this trick to avoid running task in `--check` mode: `when: not ansible_check_mode`
 
 ### Mac OS X installation
 You can install ansible module via brew (without any apt stuff):
